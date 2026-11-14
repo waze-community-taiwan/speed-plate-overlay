@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Taiwan Speed Plate Overlay
 // @namespace    https://github.com/waze-community-taiwan
-// @version      0.1.0
+// @version      0.1.1
 // @description  Display government speed-limit plates as a read-only WME map layer.
 // @description:zh-TW 在 Waze 地圖編輯器中，以唯讀疊圖顯示政府 CSV 速限標牌。
 // @author       Waze Community Taiwan
@@ -499,7 +499,7 @@
   }
 
   // package.json
-  var version = "0.1.0";
+  var version = "0.1.1";
 
   // src/terms.ts
   var sections = {

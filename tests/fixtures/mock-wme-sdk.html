@@ -1,0 +1,30 @@
+<!doctype html><html><meta charset="utf-8"><title>Speed Plates SDK Fixture</title>
+<style>body{font:14px sans-serif;display:flex;margin:0}aside{width:320px;flex-shrink:0}main{background:#d7e4da;min-height:100vh;flex:1;padding:30px}html[wz-theme=dark]{background:#1f2024;color:#eee}button.plate{border:0;background:transparent;padding:0;width:52px;height:48px;margin:10px;cursor:pointer}button.plate img{width:52px;height:48px}</style>
+<aside><button id="tab"></button><div id="pane"></div></aside><main aria-label="Map"><h2>Deterministic map fixture</h2><div id="plates"></div></main>
+<script>
+const handlers = new Map(); let features = []; let visible = false; let layer;
+window.fixture = { zIndex: 300, emit(name, payload) { for (const fn of handlers.get(name) ?? []) fn(payload); } };
+function render() {
+  const root = document.querySelector('#plates'); root.replaceChildren();
+  if (!visible) return;
+  for (const feature of features) {
+    const button = document.createElement('button'); button.className='plate'; button.setAttribute('aria-label',feature.properties.label);
+    const context={feature:{...feature,featureType:'SDKFeature'}};
+    const size=layer.styleContext.markerSize(context);
+    const image=document.createElement('img');image.src=layer.styleContext.plateGraphic(context);image.alt='';
+    button.style.width=button.style.height=image.style.width=image.style.height=`${size}px`;button.append(image);
+    button.onclick=()=>fixture.emit('wme-layer-feature-clicked',{layerName:'Taiwan government speed plates',featureId:feature.id}); root.append(button);
+  }
+}
+window.SDK_INITIALIZED = Promise.resolve();
+window.getWmeSdk = () => ({
+  State:{isReady:async()=>true},
+  Sidebar:{registerScriptTab:async()=>({tabLabel:document.querySelector('#tab'),tabPane:document.querySelector('#pane')})},
+  Events:{trackLayerEvents(){},stopLayerEventsTracking(){},on({eventName,eventHandler}){
+    const set=handlers.get(eventName) ?? new Set();set.add(eventHandler);handlers.set(eventName,set);return()=>set.delete(eventHandler);
+  }},
+  Map:{addLayer:async args=>{layer=args},redrawLayer:async()=>render(),getMapViewportElement:async()=>document.querySelector('main'),getLayerZIndex:async()=>300,removeAllFeaturesFromLayer:async()=>{features=[];render()},
+    addFeaturesToLayer:async args=>{features=args.features;render()},setLayerVisibility:async args=>{visible=args.visibility;render()},
+    setLayerZIndex:async args=>{fixture.zIndex=args.zIndex},getPixelFromLonLat:async()=>({x:400,y:180}),getMapPixelFromLonLat:async()=>({x:400,y:180}),removeLayer:async()=>{features=[];render()}}
+});
+</script><script src="/dist/wme-speed-plate-overlay.user.js"></script></html>

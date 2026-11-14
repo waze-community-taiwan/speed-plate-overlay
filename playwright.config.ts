@@ -1,0 +1,2 @@
+import { defineConfig } from '@playwright/test';
+export default defineConfig({ testDir: 'tests/e2e', use: { channel: process.env.PW_CHANNEL ?? (process.platform === 'darwin' ? 'msedge' : 'chromium'), baseURL: 'http://127.0.0.1:8765', trace: 'retain-on-failure', screenshot: 'only-on-failure' }, webServer: { command: 'npm run serve:fixtures', url: 'http://127.0.0.1:8765/mock-wme-sdk.html', reuseExistingServer: false } });

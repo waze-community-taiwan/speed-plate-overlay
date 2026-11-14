@@ -1,0 +1,8 @@
+input/
+node_modules/
+test-results/
+playwright-report/
+.wme-test-profile/
+.wme-test-profile-normal/
+dist/
+.agents/

@@ -1,0 +1,15 @@
+import { readFileSync, statSync } from 'node:fs';
+import vm from 'node:vm';
+const {version}=JSON.parse(readFileSync('package.json','utf8'));
+const path='dist/wme-speed-plate-overlay.user.js';
+const code=readFileSync(path,'utf8');
+const header=code.match(/^\/\/ ==UserScript==\n([\s\S]*?)^\/\/ ==\/UserScript==/m)?.[1];
+if (!header) throw new Error('Userscript metadata missing.');
+const metadata=key=>header.match(new RegExp(`^// @${key} +(.+)$`,'m'))?.[1];
+if (metadata('version')!==version) throw new Error('Package and userscript version differ.');
+if (metadata('name')!=='Taiwan Speed Plate Overlay' || metadata('license')!=='MIT' || metadata('grant')!=='none') throw new Error('Unexpected userscript metadata.');
+if (!code.includes(JSON.stringify(version)) || !code.includes('spo-version')) throw new Error('Sidebar version missing from bundle.');
+if (statSync(path).size>=2*1024*1024) throw new Error('Greasy Fork size limit exceeded.');
+if (code.includes('sourceMappingURL=')) throw new Error('Published file must be standalone.');
+new vm.Script(code);
+console.log(`Verified standalone userscript v${version} (${statSync(path).size} bytes).`);

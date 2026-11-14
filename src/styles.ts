@@ -55,12 +55,21 @@ export function injectStyles() {
   [wz-theme=dark] .spo-popup,[wz-theme=dark] .spo-floating,[wz-theme=dark] .spo-appearance-label select {background:var(--background_default,#1f2024)}
   .spo-popup dt {font-weight:600;margin-top:6px;overflow-wrap:anywhere}.spo-popup dd {margin:0;overflow-wrap:anywhere;white-space:pre-wrap}
   .spo-close {display:inline-flex;align-items:center;justify-content:center;float:right;width:26px;height:26px;padding:0;border-radius:8px;background:rgba(120,120,128,.12);border:1px solid var(--hairline,#aaa6);color:inherit;font:inherit;font-size:20px;line-height:1;cursor:pointer;transition:background 150ms,color 150ms}.spo-close:hover {color:#ff3b30;background:#ff3b301f}
-  .spo-floating {position:fixed;z-index:10000;box-sizing:border-box;width:110px;max-width:calc(100vw - 24px);padding:2px 6px;border:1px solid var(--hairline,#aaa6);border-radius:8px;background:var(--background_default,#fff);color:inherit;box-shadow:0 3px 12px #0004;font:inherit;font-size:10px}
+  .spo-floating {position:fixed;z-index:10000;box-sizing:border-box;width:200px;max-width:calc(100vw - 24px);border:1px solid var(--hairline,rgba(128,128,128,.3));border-radius:10px;background:var(--background_default,#fff);color:inherit;box-shadow:0 6px 24px rgba(0,0,0,.28);font:inherit;font-size:13px;overflow:hidden}
   .spo-floating[hidden] {display:none}
-  .spo-floating header {display:flex;align-items:center;justify-content:space-between;gap:4px;line-height:14px;cursor:grab;touch-action:none;user-select:none}
-  .spo-floating-dragging header {cursor:grabbing}
-  .spo-floating .spo-close {box-sizing:border-box;width:18px;height:18px;border-radius:5px;font-size:14px;flex-shrink:0}
-  .spo-floating .spo-top-row {margin-top:3px;gap:4px}
+  .spo-floating-header {display:flex;align-items:center;gap:8px;padding:2px 12px;border-bottom:1px solid var(--hairline,rgba(128,128,128,.2));background:rgba(128,128,128,.08);cursor:move;touch-action:none;user-select:none}
+  .spo-floating-header strong {flex:1;min-width:0;font-weight:600;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .spo-floating-dragging .spo-floating-header {cursor:move}
+  .spo-floating .spo-close {box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;float:none;flex-shrink:0;width:22px;height:22px;border-radius:6px;border:0;background:transparent;color:inherit;padding:0;opacity:.6;transition:opacity 150ms,background-color 150ms,transform 50ms}
+  .spo-floating .spo-close:hover {opacity:1;background:rgba(128,128,128,.18)}
+  .spo-floating .spo-close:active {transform:scale(.92)}
+  .spo-floating .spo-close:focus-visible {outline:none;box-shadow:0 0 0 3px rgba(255,149,0,.35)}
+  .spo-floating .spo-close svg {width:13px;height:13px;display:block;pointer-events:none}
+  .spo-floating-rows {padding:6px 8px;max-height:320px;overflow-y:auto}
+  .spo-floating-row {display:flex;align-items:center;gap:8px;padding:5px 4px;border-radius:6px}
+  .spo-floating-label {flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  [wz-theme=dark] .spo-floating {background:#1f2024;border-color:rgba(255,255,255,.12)}
+  [wz-theme=dark] .spo-floating-header {border-bottom-color:rgba(255,255,255,.1);background:rgba(255,255,255,.05)}
   .spo-terms-footer {margin-top:16px;padding-top:10px;border-top:1px solid var(--hairline,#aaa6);text-align:center;display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap}
   .spo-version {color:inherit;opacity:.65;font-size:11px;border:1px solid var(--hairline,#aaa6);border-radius:6px;padding:1px 5px;text-decoration:none;font-variant-numeric:tabular-nums}
   .spo-version:hover {opacity:1}
@@ -75,6 +84,6 @@ export function injectStyles() {
   .spo-terms-meta {border-top:1px solid var(--hairline,#aaa6);padding-top:12px;opacity:.7;font-size:11.5px}
   .spo-modal :focus-visible {outline:3px solid #2d6cdf88;outline-offset:2px}
   [wz-theme=dark] .spo-modal {background:var(--background_default,#1f2024)}
-  @media(prefers-reduced-motion:reduce){.spo-switch span:after,.spo-top {transition:none}.spo-top:active {transform:none}}`;
+  @media(prefers-reduced-motion:reduce){.spo-switch span:after,.spo-top,.spo-floating .spo-close {transition:none}.spo-top:active,.spo-floating .spo-close:active {transform:none}}`;
   document.head.append(style);
 }

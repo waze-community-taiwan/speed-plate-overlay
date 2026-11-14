@@ -6,8 +6,8 @@ export function mountFloatingPanel(controller: Controller, viewport: HTMLElement
   document.querySelector('.spo-floating')?.remove();
   const panel = document.createElement('section');
   panel.className = 'spo-floating'; panel.setAttribute('aria-label', 'Speed plate layer controls');
-  panel.innerHTML = `<header><strong role="button" tabindex="0" aria-label="Move floating controls" title="Drag to move. Arrow keys move; Home resets position.">Speed Plates</strong><button class="spo-close" type="button" title="Hide floating controls" aria-label="Hide floating controls">×</button></header>
-    <div class="spo-row spo-top-row"><span>On top</span>${TOP_LAYER_BUTTON}</div>`;
+  panel.innerHTML = `<header class="spo-floating-header"><strong role="button" tabindex="0" aria-label="Move floating controls" title="Drag to move. Arrow keys move; Home resets position.">Speed Plates</strong><button class="spo-close" type="button" title="Hide floating controls" aria-label="Hide floating controls"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></header>
+    <div class="spo-floating-rows"><div class="spo-floating-row"><span class="spo-floating-label">On top</span>${TOP_LAYER_BUTTON}</div></div>`;
   document.body.append(panel);
   panel.querySelector<HTMLButtonElement>('.spo-close')!.onclick = () => controller.settings({ floatingControls: false });
   const top = panel.querySelector<HTMLButtonElement>('.spo-top')!;

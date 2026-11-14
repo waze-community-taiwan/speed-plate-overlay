@@ -31,8 +31,18 @@ test('built userscript imports local CSV, toggles layer, selects popup columns a
 test('appearance and opacity controls persist, and reordered columns determine popup order', async ({ page }) => {
   await page.goto('/mock-wme-sdk.html');
   const sidebar = page.locator('.spo-panel');
-  await expect(page.locator('.spo-floating')).toHaveCSS('width','110px');
-  await expect(page.locator('.spo-floating')).toHaveCSS('height','49px');
+  await expect(page.locator('.spo-floating')).toHaveCSS('width','200px');
+  await expect(page.locator('.spo-floating')).toHaveCSS('font-size','13px');
+  await expect(page.locator('.spo-floating')).toHaveCSS('border-radius','10px');
+  await expect(page.locator('.spo-floating-header')).toHaveCSS('border-bottom-width','1px');
+  await expect(page.locator('.spo-floating-header')).toHaveCSS('padding','2px 12px');
+  await expect(page.locator('.spo-floating-rows')).toHaveCSS('padding','6px 8px');
+  await expect(page.locator('.spo-floating-row')).toHaveCSS('padding','5px 4px');
+  const close=page.locator('.spo-floating .spo-close');
+  await expect(close).toHaveCSS('width','22px'); await expect(close).toHaveCSS('height','22px');
+  await expect(close).toHaveCSS('border-top-style','none');
+  await expect(close).toHaveCSS('background-color','rgba(0, 0, 0, 0)');
+  await expect(close.locator('svg')).toHaveAttribute('aria-hidden','true');
   const opacity = page.getByLabel('Floating opacity');
   await opacity.focus(); await opacity.press('End');
   for (let i=0;i<5;i++) await opacity.press('ArrowLeft');
@@ -139,8 +149,7 @@ test('floating panel drags, clamps and resets on close, while popup width follow
   await page.getByLabel('Government CSV').setInputFiles({name:'long.csv',mimeType:'text/csv',buffer:Buffer.from('longitude,latitude,speed,direction,note\n121.5,25,50,順向,'+'long-value'.repeat(70))});
   await page.getByLabel('note',{exact:true}).check();
   await page.setViewportSize({width:500,height:650});
-  const floatingBox=(await panel.boundingBox())!;
-  expect(floatingBox.x+floatingBox.width).toBeLessThanOrEqual(488);
+  await expect.poll(async()=>{const box=(await panel.boundingBox())!;return box.x+box.width;}).toBeLessThanOrEqual(488);
   await marker.click(); await expect(popup).toBeVisible();
   const bounds=(await popup.boundingBox())!;
   expect(bounds.width).toBeLessThanOrEqual(360); expect(bounds.x+bounds.width).toBeLessThanOrEqual(488);
@@ -161,6 +170,8 @@ test('failed replacement keeps the valid overlay and a narrow dark sidebar stays
   await page.locator('.spo-panel').getByRole('button',{name:'Force on top'}).focus();
   await page.keyboard.press('Space');
   await expect(page.locator('.spo-panel').getByRole('button',{name:'Force on top'})).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('.spo-floating')).toHaveCSS('background-color','rgb(31, 32, 36)');
+  await expect(page.locator('.spo-floating-header')).toHaveCSS('background-color','rgba(255, 255, 255, 0.05)');
   await page.screenshot({path:'test-results/fixture-dark.png'});
 });
 

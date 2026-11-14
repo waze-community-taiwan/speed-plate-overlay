@@ -44,7 +44,7 @@ try {
   }
   const appearance=await floating.evaluate(panel=>({width:panel.getBoundingClientRect().width,height:panel.getBoundingClientRect().height,opacity:getComputedStyle(panel).opacity}));
   console.log('Floating control appearance:',appearance);
-  if (appearance.width!==110 || appearance.height>50 || appearance.opacity!=='0.75') throw new Error('Floating control size or opacity is incorrect.');
+  if (appearance.width!==200 || appearance.height>90 || appearance.opacity!=='0.75') throw new Error('Floating control size or opacity is incorrect.');
   const startingBox=await floating.boundingBox();
   const grip=await floating.getByRole('button',{name:'Move floating controls',exact:true}).boundingBox();
   await page.mouse.move(grip.x+grip.width/2,grip.y+grip.height/2); await page.mouse.down();

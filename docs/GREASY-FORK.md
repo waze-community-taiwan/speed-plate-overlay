@@ -2,6 +2,10 @@
 
 The source repository is `waze-community-taiwan/speed-plate-overlay`. The published script is [Taiwan Speed Plate Overlay](https://greasyfork.org/en/scripts/605482-taiwan-speed-plate-overlay), script ID `605482`.
 
+## Current setup
+
+The repository is public. Script `605482` is configured to synchronize its code from the latest GitHub Release asset and its additional information from `docs/GREASY-FORK-LISTING.md` on `main`. A GitHub webhook sends release events with the existing Greasy Fork signing secret; SSL verification is enabled. The initial `v0.1.0` workflow completed successfully. No manual GitHub setup is required for the current repository. The instructions below explain how to recreate or maintain the configuration.
+
 ## Release flow
 
 1. Push or merge a change into `main`. Feature branches and pull requests run checks without publishing.

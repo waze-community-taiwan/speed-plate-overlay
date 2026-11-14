@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Taiwan Speed Plate Overlay
 // @namespace    https://github.com/waze-community-taiwan
-// @version      0.1.2
+// @version      0.1.3
 // @description  Display government speed-limit plates as a read-only WME map layer.
 // @description:zh-TW 在 Waze 地圖編輯器中，以唯讀疊圖顯示政府 CSV 速限標牌。
 // @author       Waze Community Taiwan
@@ -499,7 +499,7 @@
   }
 
   // package.json
-  var version = "0.1.2";
+  var version = "0.1.3";
 
   // src/terms.ts
   var sections = {
@@ -618,15 +618,14 @@
     <label class="spo-row spo-floating-setting">Show floating controls <input class="spo-floating-enabled" type="checkbox"></label>
     <label class="spo-range-label">Floating opacity <span class="spo-range"><input class="spo-opacity" type="range" min="10" max="100" step="5"><output class="spo-opacity-value"></output></span></label>
     <p>\u21BB \u9806\u5411 \xB7 \u21BA \u9006\u5411 \xB7 ? unknown<br>Direction follows the source road reference, not a compass bearing.</p></div>
-    <details class="spo-card"><summary>Plate appearance</summary>
+    <section class="spo-card spo-appearance-card"><div class="spo-card-header"><h5>Plate appearance</h5><button class="spo-reset-size" type="button">Reset sizes</button></div>
     <label class="spo-appearance-label">Badge position <select class="spo-badge-position"><option value="top-left">Top left</option><option value="top-right">Top right</option><option value="bottom-left">Bottom left</option><option value="bottom-right">Bottom right</option></select></label>
     <label class="spo-row spo-color-row">Clockwise badge color <input class="spo-clockwise-color" type="color"></label>
     <label class="spo-row spo-color-row">Counter-clockwise badge color <input class="spo-counterclockwise-color" type="color"></label>
     <label class="spo-range-label">Plate size <span class="spo-range"><input class="spo-plate-size" type="range" min="0" max="200" step="any"><output class="spo-plate-size-value"></output></span></label>
     <label class="spo-range-label">Speed value size <span class="spo-range"><input class="spo-text-size" type="range" min="0" max="200" step="any"><output class="spo-text-size-value"></output></span></label>
-    <button class="spo-reset-size" type="button">Reset sizes</button>
-    <p>100% uses the standard plate and larger speed value. Long values are fitted inside the circle.</p></details>
-    <details class="spo-card"><summary>Popup columns</summary><p id="spo-order-help">Select fields to display. Drag the right-hand grips to set their order.</p><button class="spo-reset-order" type="button">Reset order</button><div class="spo-columns"></div><span class="spo-order-status" role="status" aria-live="polite"></span></details>
+    <p>100% uses the standard plate and larger speed value. Long values are fitted inside the circle.</p></section>
+    <section class="spo-card spo-columns-card"><div class="spo-card-header"><h5>Popup columns</h5><button class="spo-reset-order" type="button">Reset order</button></div><p id="spo-order-help">Select fields to display. Drag the right-hand grips to set their order.</p><div class="spo-columns"></div><span class="spo-order-status" role="status" aria-live="polite"></span></section>
     <p>Files stay in this browser session. Reload and choose the file again. Column and layer preferences are saved.</p><footer class="spo-terms-footer"><button type="button" class="spo-terms-link">Usage terms</button><a class="spo-version" href="https://github.com/waze-community-taiwan/speed-plate-overlay/releases/tag/v${version}" target="_blank" rel="noopener noreferrer">v${version}</a></footer>`;
     const language = root.querySelector(".spo-language");
     language.onchange = () => controller.settings({ language: language.value });
@@ -818,7 +817,11 @@
   .spo-dragging {opacity:.45}
   .spo-drop-before {box-shadow:inset 0 3px #2d6cdf}
   .spo-drop-after {box-shadow:inset 0 -3px #2d6cdf}
-  .spo-reset-order,.spo-reset-size {margin-top:8px;border-radius:6px;border:1px solid var(--hairline,#aaa6);background:transparent;color:inherit;font:inherit;padding:3px 8px;cursor:pointer}
+  .spo-card-header {display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+  .spo-card-header h5 {margin:0;min-width:0;font-size:13px;font-weight:600;line-height:1.4}
+  .spo-appearance-card > p {margin:12px 0 0}
+  .spo-columns-card > p {margin:0 0 10px}
+  .spo-reset-order,.spo-reset-size {margin:0;flex-shrink:0;white-space:nowrap;border-radius:6px;border:1px solid var(--hairline,#aaa6);background:transparent;color:inherit;font:inherit;padding:3px 8px;cursor:pointer}
   .spo-reset-order:disabled {opacity:.4;cursor:default}
   .spo-order-status {display:block;font-size:11px;opacity:.75}
   .spo-range-label,.spo-appearance-label {display:block;margin-top:12px;font-weight:400}

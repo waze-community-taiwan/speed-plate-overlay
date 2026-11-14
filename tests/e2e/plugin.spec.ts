@@ -8,6 +8,13 @@ test('built userscript imports local CSV, toggles layer, selects popup columns a
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/mock-wme-sdk.html');
   await expect(page.getByRole('heading', { name: '台灣速限標牌疊圖' })).toBeVisible();
+  await expect(page.getByLabel('Badge position')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Popup columns',exact:true})).toBeVisible();
+  await expect(page.locator('.spo-panel details,.spo-panel summary')).toHaveCount(0);
+  for (const card of ['.spo-appearance-card','.spo-columns-card']) {
+    await expect(page.locator(card+' .spo-card-header button')).toBeVisible();
+    await expect(page.locator(card+' .spo-card-header')).toHaveCSS('margin-bottom','10px');
+  }
   await expect(page.locator('.spo-version')).toHaveText(/^v\d+\.\d+\.\d+$/);
   await expect(page.locator('.spo-version')).toHaveAttribute('href', /releases\/tag\/v\d+\.\d+\.\d+$/);
   await page.getByLabel('Government CSV').setInputFiles({ name: 'sample.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
@@ -47,7 +54,7 @@ test('appearance and opacity controls persist, and reordered columns determine p
   await opacity.focus(); await opacity.press('End');
   for (let i=0;i<5;i++) await opacity.press('ArrowLeft');
   await expect(page.locator('.spo-floating')).toHaveCSS('opacity','0.75');
-  await page.getByText('Plate appearance',{exact:true}).click();
+  await expect(page.getByLabel('Badge position')).toBeVisible();
   await expect(page.getByLabel('Badge position')).toHaveValue('bottom-right');
   await page.getByLabel('Government CSV').setInputFiles({name:'sample.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});
   const marker=page.getByRole('button',{name:'50',exact:true});
@@ -72,7 +79,7 @@ test('appearance and opacity controls persist, and reordered columns determine p
   await marker.click();
   await expect(page.locator('.spo-popup dt')).toHaveText(['speed','longitude']);
   await page.screenshot({path:'test-results/fixture-appearance.png'});
-  await page.reload(); await page.getByText('Plate appearance',{exact:true}).click();
+  await page.reload(); await expect(page.getByLabel('Badge position')).toBeVisible();
   await expect(page.getByLabel('Plate size')).toHaveValue('150');
   await expect(page.getByLabel('Speed value size')).toHaveValue('200');
   await expect(page.getByLabel('Badge position')).toHaveValue('bottom-right');
@@ -92,7 +99,7 @@ test('appearance and opacity controls persist, and reordered columns determine p
 
 test('default sliders align, right-hand NLSC grips work, and per-direction badge colors persist', async ({page}) => {
   await page.goto('/mock-wme-sdk.html');
-  await page.getByText('Plate appearance',{exact:true}).click();
+  await expect(page.getByLabel('Badge position')).toBeVisible();
   const plate=page.getByLabel('Plate size'), value=page.getByLabel('Speed value size');
   await expect(plate).toHaveValue('100'); await expect(value).toHaveValue('100');
   const sliderPosition = (input:HTMLInputElement) => {
@@ -119,7 +126,7 @@ test('default sliders align, right-hand NLSC grips work, and per-direction badge
   await expect(row.locator('.spo-drag-handle')).toHaveCSS('border-top-style','none');
   await expect(page.locator('#spo-order-help')).toHaveText('Select fields to display. Drag the right-hand grips to set their order.');
   await page.screenshot({path:'test-results/fixture-nlsc-style.png'});
-  await page.reload(); await page.getByText('Plate appearance',{exact:true}).click();
+  await page.reload(); await expect(page.getByLabel('Badge position')).toBeVisible();
   await expect(clockwise).toHaveValue('#123456'); await expect(counterclockwise).toHaveValue('#abcdef');
 });
 

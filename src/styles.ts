@@ -33,7 +33,11 @@ export function injectStyles() {
   .spo-dragging {opacity:.45}
   .spo-drop-before {box-shadow:inset 0 3px #2d6cdf}
   .spo-drop-after {box-shadow:inset 0 -3px #2d6cdf}
-  .spo-reset-order,.spo-reset-size {margin-top:8px;border-radius:6px;border:1px solid var(--hairline,#aaa6);background:transparent;color:inherit;font:inherit;padding:3px 8px;cursor:pointer}
+  .spo-card-header {display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+  .spo-card-header h5 {margin:0;min-width:0;font-size:13px;font-weight:600;line-height:1.4}
+  .spo-appearance-card > p {margin:12px 0 0}
+  .spo-columns-card > p {margin:0 0 10px}
+  .spo-reset-order,.spo-reset-size {margin:0;flex-shrink:0;white-space:nowrap;border-radius:6px;border:1px solid var(--hairline,#aaa6);background:transparent;color:inherit;font:inherit;padding:3px 8px;cursor:pointer}
   .spo-reset-order:disabled {opacity:.4;cursor:default}
   .spo-order-status {display:block;font-size:11px;opacity:.75}
   .spo-range-label,.spo-appearance-label {display:block;margin-top:12px;font-weight:400}

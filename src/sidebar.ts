@@ -16,15 +16,14 @@ export function mountSidebar(root: HTMLElement, controller: Controller) {
     <label class="spo-row spo-floating-setting">Show floating controls <input class="spo-floating-enabled" type="checkbox"></label>
     <label class="spo-range-label">Floating opacity <span class="spo-range"><input class="spo-opacity" type="range" min="10" max="100" step="5"><output class="spo-opacity-value"></output></span></label>
     <p>↻ 順向 · ↺ 逆向 · ? unknown<br>Direction follows the source road reference, not a compass bearing.</p></div>
-    <details class="spo-card"><summary>Plate appearance</summary>
+    <section class="spo-card spo-appearance-card"><div class="spo-card-header"><h5>Plate appearance</h5><button class="spo-reset-size" type="button">Reset sizes</button></div>
     <label class="spo-appearance-label">Badge position <select class="spo-badge-position"><option value="top-left">Top left</option><option value="top-right">Top right</option><option value="bottom-left">Bottom left</option><option value="bottom-right">Bottom right</option></select></label>
     <label class="spo-row spo-color-row">Clockwise badge color <input class="spo-clockwise-color" type="color"></label>
     <label class="spo-row spo-color-row">Counter-clockwise badge color <input class="spo-counterclockwise-color" type="color"></label>
     <label class="spo-range-label">Plate size <span class="spo-range"><input class="spo-plate-size" type="range" min="0" max="200" step="any"><output class="spo-plate-size-value"></output></span></label>
     <label class="spo-range-label">Speed value size <span class="spo-range"><input class="spo-text-size" type="range" min="0" max="200" step="any"><output class="spo-text-size-value"></output></span></label>
-    <button class="spo-reset-size" type="button">Reset sizes</button>
-    <p>100% uses the standard plate and larger speed value. Long values are fitted inside the circle.</p></details>
-    <details class="spo-card"><summary>Popup columns</summary><p id="spo-order-help">Select fields to display. Drag the right-hand grips to set their order.</p><button class="spo-reset-order" type="button">Reset order</button><div class="spo-columns"></div><span class="spo-order-status" role="status" aria-live="polite"></span></details>
+    <p>100% uses the standard plate and larger speed value. Long values are fitted inside the circle.</p></section>
+    <section class="spo-card spo-columns-card"><div class="spo-card-header"><h5>Popup columns</h5><button class="spo-reset-order" type="button">Reset order</button></div><p id="spo-order-help">Select fields to display. Drag the right-hand grips to set their order.</p><div class="spo-columns"></div><span class="spo-order-status" role="status" aria-live="polite"></span></section>
     <p>Files stay in this browser session. Reload and choose the file again. Column and layer preferences are saved.</p><footer class="spo-terms-footer"><button type="button" class="spo-terms-link">Usage terms</button><a class="spo-version" href="https://github.com/waze-community-taiwan/speed-plate-overlay/releases/tag/v${scriptVersion}" target="_blank" rel="noopener noreferrer">v${scriptVersion}</a></footer>`;
   const language = root.querySelector<HTMLSelectElement>('.spo-language')!;
   language.onchange = () => controller.settings({language: language.value as Language});

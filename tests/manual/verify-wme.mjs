@@ -28,7 +28,7 @@ try {
   const sidebar = page.locator('.spo-panel');
   const floating = page.locator('.spo-floating');
   await sidebar.getByLabel('Show floating controls').check();
-  if (!await sidebar.getByLabel('Badge position').isVisible()) await sidebar.getByText('Plate appearance',{exact:true}).click();
+  if (!await sidebar.getByLabel('Badge position').isVisible()) throw new Error('Plate appearance must be expanded.');
   await sidebar.getByLabel('Badge position').selectOption('bottom-right');
   await sidebar.getByRole('button',{name:'Reset sizes',exact:true}).click();
   const thumbPositions=await sidebar.locator('.spo-plate-size,.spo-text-size').evaluateAll(inputs=>inputs.map(input=>{
@@ -78,8 +78,7 @@ try {
   await page.mouse.click(box.x+box.width/2,box.y+box.height/2);
   await page.waitForSelector('.spo-popup');
   console.log('Popup:',await page.locator('.spo-popup').innerText());
-  if (await sidebar.locator('.spo-columns').isVisible()) await sidebar.getByRole('heading',{name:'台灣速限標牌疊圖'}).click();
-  else await page.getByText('Popup columns',{exact:true}).click();
+  await sidebar.getByRole('heading',{name:'Popup columns',exact:true}).click();
   if (await page.locator('.spo-popup').count()) throw new Error('Outside click did not close the popup.');
   await page.getByLabel('備註',{exact:true}).check();
   const rows=page.locator('.spo-column-row');

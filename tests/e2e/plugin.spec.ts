@@ -4,6 +4,75 @@ test.beforeEach(async ({page}) => {
   await page.locator('.spo-language').selectOption('en');
 });
 const csv = 'longitude,latitude,speed,direction,note\n121.5,25,50,順向,<script>alert(1)</script>\n121.51,25.01,30,逆向,hello';
+test('optional circular arrows persist and facing-direction guidance switches between both languages', async ({page}) => {
+  const style = page.getByLabel('Arrow style',{exact:true});
+  await expect(style).toHaveValue('four-direction');
+  const help = page.locator('.spo-appearance-card #spo-arrow-help');
+  await expect(style).toHaveAttribute('aria-describedby','spo-arrow-help');
+  await expect(help.locator('.spo-four-direction-help')).toBeVisible();
+  await expect(help.locator('.spo-four-direction-help')).toContainText('↑ means this plate applies to northbound traffic');
+  await expect(help.locator('.spo-circular-help')).toBeHidden();
+  await expect(page.locator('.spo-card').filter({has:page.getByLabel('Show speed plates')})).not.toContainText('northbound');
+  await page.getByLabel('Government CSV').setInputFiles({name:'optional.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});
+  await style.selectOption('circular');
+  await expect(help.locator('.spo-four-direction-help')).toBeHidden();
+  await expect(help.locator('.spo-circular-help')).toBeVisible();
+  await expect(help.locator('.spo-circular-help')).toContainText('may face south, so its speed limit applies to northbound traffic');
+  const first = page.getByRole('button',{name:'50',exact:true});
+  const second = page.getByRole('button',{name:'30',exact:true});
+  await expect.poll(async()=>decodeURIComponent((await first.locator('img').getAttribute('src'))!)).toContain('M18 14 A7 7');
+  await expect.poll(async()=>decodeURIComponent((await second.locator('img').getAttribute('src'))!)).toContain('scale(-1 1)');
+  await first.click();
+  await expect(page.locator('.spo-popup strong')).toContainText('↻ 順向');
+  await page.keyboard.press('Escape');
+  await page.reload();
+  await expect(style).toHaveValue('circular');
+  await expect(page.locator('.plate')).toHaveCount(2);
+  await second.click();
+  await expect(page.locator('.spo-popup strong')).toContainText('↺ 逆向');
+  await page.keyboard.press('Escape');
+  await page.locator('.spo-language').selectOption('zh-TW');
+  await expect(page.getByLabel('箭頭樣式',{exact:true})).toHaveValue('circular');
+  await expect(page.getByRole('option',{name:'四方向（預設）',exact:true})).toHaveCount(1);
+  await expect(page.getByRole('option',{name:'順時針／逆時針',exact:true})).toHaveCount(1);
+  await expect(help.locator('.spo-circular-help')).toContainText('順時針面向的標牌可能朝南，因此其速限適用於北向車流');
+  await page.getByLabel('箭頭樣式',{exact:true}).selectOption('four-direction');
+  await expect(help.locator('.spo-four-direction-help')).toBeVisible();
+  await expect(help.locator('.spo-four-direction-help')).toContainText('↑ 表示此標牌的速限適用於北向車流');
+  await expect(help.locator('.spo-circular-help')).toBeHidden();
+  await page.getByLabel('箭頭樣式',{exact:true}).selectOption('circular');
+  await page.locator('.spo-language').selectOption('en');
+  await style.selectOption('four-direction');
+  await expect.poll(async()=>decodeURIComponent((await first.locator('img').getAttribute('src'))!)).toContain('>?</text>');
+  await page.reload();
+  await expect(style).toHaveValue('four-direction');
+});
+test('road numbers drive four arrow directions and custom colors update stroke contrast', async ({page}) => {
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  const roads = 'longitude,latitude,speed,direction,公路編號\n121.5,25,50,順向,台2\n121.51,25.01,60,逆向,台2甲\n121.52,25.02,70,順向,台1\n121.53,25.03,80,逆向,台3';
+  await page.getByLabel('Government CSV').setInputFiles({name:'directions.csv',mimeType:'text/csv',buffer:Buffer.from(roads)});
+  for (const [speed,rotation,symbol] of [['50',0,'→'],['60',180,'←'],['70',90,'↓'],['80',270,'↑']] as const) {
+    const marker = page.getByRole('button',{name:speed,exact:true});
+    await expect.poll(async()=>decodeURIComponent((await marker.locator('img').getAttribute('src'))!)).toContain(`rotate(${rotation} 10 10)`);
+    await expect.poll(()=>marker.locator('img').evaluate((image:HTMLImageElement)=>image.naturalWidth)).toBe(56);
+    await marker.click();
+    await expect(page.locator('.spo-popup strong')).toContainText(`${speed} km/h · ${symbol}`);
+    await page.keyboard.press('Escape');
+  }
+  for (const [label,speeds] of [['Clockwise badge color',['50','70']],['Counter-clockwise badge color',['60','80']]] as const) {
+    for (const [color,ink] of [['#123456','#ffffff'],['#abcdef','#000000']] as const) {
+      await page.getByLabel(label,{exact:true}).evaluate((input:HTMLInputElement,color)=>{
+        input.value=color; input.dispatchEvent(new Event('input',{bubbles:true}));
+      },color);
+      for (const speed of speeds) {
+        const image = page.getByRole('button',{name:speed,exact:true}).locator('img');
+        await expect.poll(async()=>decodeURIComponent((await image.getAttribute('src'))!)).toContain(`stroke="${ink}" stroke-width="2.5"`);
+      }
+    }
+  }
+  await page.screenshot({path:'test-results/fixture-four-directions.png'});
+  expect(errors).toEqual([]);
+});
 test('automatically remembers a CSV, preserves it on invalid replacement and clears it across refresh', async ({page}) => {
   const input = page.getByLabel('Government CSV');
   await input.setInputFiles({name:'remembered.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});

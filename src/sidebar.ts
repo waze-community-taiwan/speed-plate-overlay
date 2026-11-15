@@ -2,7 +2,7 @@ import { version as scriptVersion } from '../package.json';
 import { localize, t, importStatus, type Language } from './i18n';
 import { openTermsDialog } from './terms';
 import { orderedColumns, type Controller } from './controller';
-import type { BadgePosition } from './types';
+import type { ArrowStyle, BadgePosition } from './types';
 import { scaleToSlider, sliderToScale } from './size-scale';
 import { TOP_LAYER_BUTTON } from './top-button';
 export function mountSidebar(root: HTMLElement, controller: Controller) {
@@ -15,8 +15,10 @@ export function mountSidebar(root: HTMLElement, controller: Controller) {
     <div class="spo-row spo-top-row"><span>Force on top</span>${TOP_LAYER_BUTTON}</div>
     <label class="spo-row spo-floating-setting">Show floating controls <input class="spo-floating-enabled" type="checkbox"></label>
     <label class="spo-range-label">Floating opacity <span class="spo-range"><input class="spo-opacity" type="range" min="10" max="100" step="5"><output class="spo-opacity-value"></output></span></label>
-    <p>↻ 順向 · ↺ 逆向 · ? unknown<br>Direction follows the source road reference, not a compass bearing.</p></div>
+    </div>
     <section class="spo-card spo-appearance-card"><div class="spo-card-header"><h5>Plate appearance</h5><button class="spo-reset-size" type="button">Reset sizes</button></div>
+    <label class="spo-appearance-label">Arrow style <select class="spo-arrow-style" aria-label="Arrow style" aria-describedby="spo-arrow-help"><option value="four-direction">Four directions (default)</option><option value="circular">Clockwise / counter-clockwise</option></select></label>
+    <div id="spo-arrow-help"><div class="spo-four-direction-help"><p>Four-direction arrows show the traffic direction the speed limit applies to: ↑ northbound, → eastbound, ↓ southbound, ← westbound. For example, ↑ means this plate applies to northbound traffic.</p><p>Even roads: → forward · ← reverse; odd roads: ↓ forward · ↑ reverse; ? unknown</p></div><p class="spo-circular-help">Circular arrows show the plate’s facing direction: ↻ clockwise (順向), ↺ counter-clockwise (逆向). The speed limit applies to traffic approaching the front of the plate, traveling opposite to the direction it faces. For example, a clockwise-facing plate may face south, so its speed limit applies to northbound traffic.</p></div>
     <label class="spo-appearance-label">Badge position <select class="spo-badge-position"><option value="top-left">Top left</option><option value="top-right">Top right</option><option value="bottom-left">Bottom left</option><option value="bottom-right">Bottom right</option></select></label>
     <label class="spo-row spo-color-row">Clockwise badge color <input class="spo-clockwise-color" type="color"></label>
     <label class="spo-row spo-color-row">Counter-clockwise badge color <input class="spo-counterclockwise-color" type="color"></label>
@@ -37,6 +39,8 @@ export function mountSidebar(root: HTMLElement, controller: Controller) {
   const opacity = root.querySelector<HTMLInputElement>('.spo-opacity')!;
   const plateSize = root.querySelector<HTMLInputElement>('.spo-plate-size')!;
   const textSize = root.querySelector<HTMLInputElement>('.spo-text-size')!;
+  const arrowStyle = root.querySelector<HTMLSelectElement>('.spo-arrow-style')!;
+  arrowStyle.onchange = () => controller.settings({arrowStyle: arrowStyle.value as ArrowStyle});
   const badgePosition = root.querySelector<HTMLSelectElement>('.spo-badge-position')!;
   const clockwiseColor = root.querySelector<HTMLInputElement>('.spo-clockwise-color')!;
   const counterclockwiseColor = root.querySelector<HTMLInputElement>('.spo-counterclockwise-color')!;
@@ -77,6 +81,9 @@ export function mountSidebar(root: HTMLElement, controller: Controller) {
     top.setAttribute('aria-pressed', String(state.forceOnTop));
     floating.checked = state.floatingControls;
     root.querySelector<HTMLButtonElement>('.spo-reset-order')!.disabled = !state.headers.length;
+    arrowStyle.value = state.arrowStyle;
+    root.querySelector<HTMLElement>('.spo-four-direction-help')!.hidden = state.arrowStyle !== 'four-direction';
+    root.querySelector<HTMLElement>('.spo-circular-help')!.hidden = state.arrowStyle !== 'circular';
     badgePosition.value = state.badgePosition;
     clockwiseColor.value = state.clockwiseColor; counterclockwiseColor.value = state.counterclockwiseColor;
     for (const [input, output, value, maximum] of [

@@ -13,6 +13,8 @@ export interface ParsedPlateFile {
   rejectedRows: number;
 }
 
+export type ArrowStyle = 'four-direction' | 'circular';
+
 export type BadgePosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
 export interface Settings {
@@ -23,6 +25,7 @@ export interface Settings {
   floatingControls: boolean;
   floatingOpacity: number;
   badgePosition: BadgePosition;
+  arrowStyle: ArrowStyle;
   clockwiseColor: string;
   counterclockwiseColor: string;
   plateScale: number;

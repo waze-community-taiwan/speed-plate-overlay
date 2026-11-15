@@ -3,15 +3,11 @@ import type { AsyncWmeSDK, SdkWazeFeature } from '@waze-editor/sdk-typings';
 import { orderedColumns, type Controller } from './controller';
 import type { SpeedPlateRecord } from './types';
 import { LAYER_NAME, TOP_Z_INDEX } from './constants';
-import { badgeOffset, plateGraphic } from './marker';
-
-export function directionSymbol(direction: string): string {
-  return direction === '順向' ? '↻' : direction === '逆向' ? '↺' : '?';
-}
+import { badgeOffset, directionSymbol, plateGraphic } from './marker';
 
 export async function bindMap(sdk: AsyncWmeSDK, controller: Controller) {
   await sdk.Map.addLayer({ layerName: LAYER_NAME, styleContext: {
-    plateGraphic: ({ feature }: { feature?: SdkWazeFeature }) => plateGraphic(String(feature?.properties.label ?? ''), String(feature?.properties.direction ?? ''), controller.state),
+    plateGraphic: ({ feature }: { feature?: SdkWazeFeature }) => plateGraphic(String(feature?.properties.label ?? ''), String(feature?.properties.direction ?? ''), controller.state, String(feature?.properties.roadNumber ?? '')),
     markerSize: () => 56 * controller.state.plateScale,
   }, styleRules: [{ style: { externalGraphic: '${plateGraphic}', graphicWidth: '${markerSize}', graphicHeight: '${markerSize}',
     graphicOpacity: 1, cursor: 'pointer' } }] });
@@ -32,7 +28,7 @@ export async function bindMap(sdk: AsyncWmeSDK, controller: Controller) {
     popup.setAttribute('role', 'region'); popup.setAttribute('aria-label', t(controller.state.language, 'Speed plate details'));
     const button = document.createElement('button'); button.className = 'spo-close'; button.textContent = '×';
     button.type = 'button'; button.title = t(controller.state.language, 'Close details'); button.setAttribute('aria-label', t(controller.state.language, 'Close details')); button.onclick = close;
-    const title = document.createElement('strong'); title.textContent = `${record.speed} km/h · ${directionSymbol(record.direction)} ${record.direction}`;
+    const title = document.createElement('strong'); title.textContent = `${record.speed} km/h · ${directionSymbol(record.direction, record.values['公路編號'], controller.state.arrowStyle)} ${record.direction}`;
     const list = document.createElement('dl');
     for (const column of orderedColumns(controller.state).filter(c => controller.state.visibleColumns.includes(c))) {
       const term = document.createElement('dt'); term.textContent = column;
@@ -55,10 +51,10 @@ export async function bindMap(sdk: AsyncWmeSDK, controller: Controller) {
         close(); await sdk.Map.removeAllFeaturesFromLayer({ layerName: LAYER_NAME });
         if (state.records.length) await sdk.Map.addFeaturesToLayer({ layerName: LAYER_NAME, features: state.records.map(record => ({
           type: 'Feature', id: record.id, geometry: { type: 'Point', coordinates: [record.longitude, record.latitude] },
-          properties: { label: record.speed, direction: record.direction },
+          properties: { label: record.speed, direction: record.direction, roadNumber: record.values['公路編號'] ?? '' },
         })) }); records = state.records;
       }
-      const nextStyle = JSON.stringify([state.badgePosition, state.plateScale, state.speedTextScale,state.clockwiseColor,state.counterclockwiseColor]);
+      const nextStyle = JSON.stringify([state.arrowStyle, state.badgePosition, state.plateScale, state.speedTextScale,state.clockwiseColor,state.counterclockwiseColor]);
       if (markerStyle !== nextStyle) { await sdk.Map.redrawLayer({ layerName: LAYER_NAME }); markerStyle = nextStyle; }
       await sdk.Map.setLayerZIndex({ layerName: LAYER_NAME, zIndex: state.forceOnTop ? TOP_Z_INDEX : normalZ });
       await sdk.Map.setLayerVisibility({ layerName: LAYER_NAME, visibility: state.enabled && !!state.records.length });

@@ -10,9 +10,9 @@ it('adds geographic points, restores normal layer order and cleans up only its o
   const off = vi.fn(); const events = { trackLayerEvents: vi.fn(), stopLayerEventsTracking: vi.fn(), on: vi.fn(() => off) };
   const controller = new Controller();
   const dispose = await bindMap({ Map: map, Events: events } as unknown as AsyncWmeSDK, controller);
-  await controller.importFile({ name: 'sample.csv', size: 1, text: async () => 'lon,lat,speed,direction\n121.5,25,50,順向' } as File);
+  await controller.importFile({ name: 'sample.csv', size: 1, text: async () => 'lon,lat,speed,direction,公路編號\n121.5,25,50,順向,台2' } as File);
   await settle();
-  expect(map.addFeaturesToLayer).toHaveBeenLastCalledWith(expect.objectContaining({ features: [expect.objectContaining({geometry: {type:'Point',coordinates:[121.5,25]},properties:{label:'50',direction:'順向'}})] }));
+  expect(map.addFeaturesToLayer).toHaveBeenLastCalledWith(expect.objectContaining({ features: [expect.objectContaining({geometry: {type:'Point',coordinates:[121.5,25]},properties:{label:'50',direction:'順向',roadNumber:'台2'}})] }));
   const additions = map.addFeaturesToLayer.mock.calls.length;
   controller.settings({ plateScale: 2, badgePosition: 'top-left' }); await settle();
   expect(map.addFeaturesToLayer).toHaveBeenCalledTimes(additions);

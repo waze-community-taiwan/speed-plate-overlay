@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Taiwan Speed Plate Overlay
 // @namespace    https://github.com/waze-community-taiwan
-// @version      0.1.3
+// @version      0.1.4
 // @description  Display government speed-limit plates as a read-only WME map layer.
 // @description:zh-TW 在 Waze 地圖編輯器中，以唯讀疊圖顯示 CSV 速限標牌。
 // @author       Waze Community Taiwan
@@ -164,14 +164,109 @@
     storage.setItem(STORAGE_KEY, JSON.stringify(normalizeSettings(settings)));
   }
 
+  // src/dataset-storage.ts
+  var MAX_CSV_BYTES = 30 * 1024 * 1024;
+  async function transaction(mode, action) {
+    const db = await new Promise((resolve, reject) => {
+      let blocked = false;
+      const request = indexedDB.open(`${SCRIPT_ID}:datasets`, 1);
+      request.onupgradeneeded = () => request.result.createObjectStore("datasets");
+      request.onsuccess = () => {
+        if (blocked) request.result.close();
+        else resolve(request.result);
+      };
+      request.onerror = () => reject(request.error);
+      request.onblocked = () => {
+        blocked = true;
+        reject(new Error("Dataset storage is blocked by another tab."));
+      };
+    });
+    db.onversionchange = () => db.close();
+    try {
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction("datasets", mode);
+        const request = action(tx.objectStore("datasets"));
+        tx.oncomplete = () => resolve(request.result);
+        tx.onabort = () => reject(tx.error ?? new Error("Dataset storage transaction aborted."));
+        tx.onerror = () => reject(tx.error);
+      });
+    } finally {
+      db.close();
+    }
+  }
+  var datasetStorage = {
+    async load() {
+      const saved = await transaction("readonly", (store) => store.get("current"));
+      if (saved === void 0) return void 0;
+      const value = saved;
+      if (!value || value.version !== 1 || typeof value.fileName !== "string" || typeof value.text !== "string" || typeof value.importedAt !== "number" || !Number.isFinite(value.importedAt) || new Blob([value.text]).size > MAX_CSV_BYTES) throw new Error("Invalid saved CSV.");
+      return value;
+    },
+    async save(dataset) {
+      await transaction("readwrite", (store) => store.put(dataset, "current"));
+    },
+    async clear() {
+      await transaction("readwrite", (store) => store.delete("current"));
+    }
+  };
+
   // src/controller.ts
   function orderedColumns(state) {
     return [.../* @__PURE__ */ new Set([...state.columnOrder, ...state.visibleColumns, ...state.headers])].filter((column) => state.headers.includes(column));
   }
   var Controller = class {
+    constructor(datasets = datasetStorage) {
+      this.datasets = datasets;
+    }
+    datasets;
     state = { ...loadSettings(), headers: [], records: [], fileName: null, rejectedRows: 0, loading: false, error: null };
     listeners = /* @__PURE__ */ new Set();
     revision = 0;
+    storageQueue = Promise.resolve();
+    persist(action) {
+      const job = this.storageQueue.then(action);
+      this.storageQueue = job.catch(() => {
+      });
+      return job;
+    }
+    async restoreFile() {
+      const revision = this.revision;
+      this.state.loading = true;
+      this.emit();
+      try {
+        const saved = await this.datasets.load();
+        if (!saved || revision !== this.revision) return;
+        const parsed = parseSpeedPlateCsv(saved.text);
+        const columnOrder = [.../* @__PURE__ */ new Set([...this.state.columnOrder, ...this.state.visibleColumns, ...parsed.headers])];
+        Object.assign(this.state, parsed, { fileName: saved.fileName, columnOrder });
+      } catch {
+        if (revision === this.revision) this.state.error = "Saved CSV could not be restored. Choose the file again.";
+      } finally {
+        if (revision === this.revision) {
+          this.state.loading = false;
+          this.emit();
+        }
+      }
+    }
+    async clearFile() {
+      const revision = ++this.revision;
+      this.state.loading = true;
+      this.state.error = null;
+      this.emit();
+      try {
+        await this.persist(() => this.datasets.clear());
+        if (revision !== this.revision) return;
+        Object.assign(this.state, { headers: [], records: [], fileName: null, rejectedRows: 0 });
+        this.settings({ enabled: false });
+      } catch {
+        if (revision === this.revision) this.state.error = "Saved CSV could not be cleared. Try again.";
+      } finally {
+        if (revision === this.revision) {
+          this.state.loading = false;
+          this.emit();
+        }
+      }
+    }
     subscribe(fn) {
       this.listeners.add(fn);
       fn();
@@ -212,11 +307,18 @@
       this.state.error = null;
       this.emit();
       try {
-        if (file.size > 30 * 1024 * 1024) throw new Error("Choose a CSV smaller than 30 MB.");
-        const parsed = parseSpeedPlateCsv(await file.text());
+        if (file.size > MAX_CSV_BYTES) throw new Error("Choose a CSV smaller than 30 MB.");
+        const text = await file.text();
+        const parsed = parseSpeedPlateCsv(text);
         if (revision !== this.revision) return;
         const columnOrder = [.../* @__PURE__ */ new Set([...this.state.columnOrder, ...this.state.visibleColumns, ...parsed.headers])];
         Object.assign(this.state, parsed, { fileName: file.name, enabled: true, columnOrder });
+        this.settings({ enabled: true });
+        try {
+          await this.persist(() => this.datasets.save({ version: 1, fileName: file.name, text, importedAt: Date.now() }));
+        } catch {
+          if (revision === this.revision) this.state.error = "CSV loaded, but could not be saved in this browser. Select it again after refresh.";
+        }
       } catch (error) {
         if (revision === this.revision) this.state.error = String(error instanceof Error ? error.message : error);
       } finally {
@@ -231,7 +333,7 @@
   // src/i18n.ts
   var zh = {
     "Language": "\u8A9E\u8A00",
-    "Government CSV (UTF-8)": "\u653F\u5E9C\u8CC7\u6599 CSV\uFF08UTF-8\uFF09",
+    "Government CSV (UTF-8)": "\u8CC7\u6599 CSV\uFF08UTF-8\uFF09",
     "Show speed plates": "\u986F\u793A\u901F\u9650\u6A19\u724C",
     "Force on top": "\u5F37\u5236\u7F6E\u9802",
     "Force speed plates above other map layers": "\u5C07\u901F\u9650\u6A19\u724C\u7F6E\u65BC\u5176\u4ED6\u5716\u5C64\u4E0A\u65B9",
@@ -255,9 +357,13 @@
     "Select fields to display. Drag the right-hand grips to set their order.": "\u52FE\u9078\u8981\u986F\u793A\u7684\u6B04\u4F4D\uFF0C\u62D6\u66F3\u53F3\u5074\u63E1\u67C4\u8ABF\u6574\u986F\u793A\u9806\u5E8F\u3002",
     "Reset order": "\u91CD\u8A2D\u9806\u5E8F",
     "Order reset to the CSV column order.": "\u5DF2\u91CD\u8A2D\u70BA CSV \u539F\u59CB\u6B04\u4F4D\u9806\u5E8F\u3002",
-    "Files stay in this browser session. Reload and choose the file again. Column and layer preferences are saved.": "\u6A94\u6848\u50C5\u4FDD\u7559\u65BC\u672C\u6B21\u700F\u89BD\u5668\u5DE5\u4F5C\u968E\u6BB5\uFF0C\u91CD\u65B0\u8F09\u5165\u5F8C\u9808\u518D\u6B21\u9078\u53D6\u3002\u6B04\u4F4D\u8207\u5716\u5C64\u504F\u597D\u8A2D\u5B9A\u6703\u81EA\u52D5\u5132\u5B58\u3002",
+    "CSV files are saved automatically in this browser and restored after refresh. Clear saved CSV removes the saved copy and overlay.": "CSV \u6703\u81EA\u52D5\u5132\u5B58\u65BC\u6B64\u700F\u89BD\u5668\uFF0C\u91CD\u65B0\u8F09\u5165\u5F8C\u6703\u81EA\u52D5\u9084\u539F\u3002\u300C\u6E05\u9664\u5DF2\u5132\u5B58 CSV\u300D\u6703\u79FB\u9664\u5132\u5B58\u7684\u526F\u672C\u8207\u758A\u5716\u3002",
+    "Clear saved CSV": "\u6E05\u9664\u5DF2\u5132\u5B58 CSV",
+    "Saved CSV could not be restored. Choose the file again.": "\u7121\u6CD5\u9084\u539F\u5DF2\u5132\u5B58\u7684 CSV\uFF0C\u8ACB\u91CD\u65B0\u9078\u53D6\u6A94\u6848\u3002",
+    "Saved CSV could not be cleared. Try again.": "\u7121\u6CD5\u6E05\u9664\u5DF2\u5132\u5B58\u7684 CSV\uFF0C\u8ACB\u91CD\u8A66\u3002",
+    "CSV loaded, but could not be saved in this browser. Select it again after refresh.": "CSV \u5DF2\u8F09\u5165\uFF0C\u4F46\u7121\u6CD5\u5132\u5B58\u65BC\u6B64\u700F\u89BD\u5668\uFF0C\u91CD\u65B0\u8F09\u5165\u5F8C\u8ACB\u518D\u6B21\u9078\u53D6\u3002",
     "Reading CSV\u2026": "\u6B63\u5728\u8B80\u53D6 CSV\u2026",
-    "Choose a government CSV to begin.": "\u8ACB\u9078\u53D6\u653F\u5E9C CSV \u8CC7\u6599\u958B\u59CB\u4F7F\u7528\u3002",
+    "Choose a government CSV to begin.": "\u8ACB\u9078\u53D6 CSV \u8CC7\u6599\u958B\u59CB\u4F7F\u7528\u3002",
     "Speed plate layer controls": "\u901F\u9650\u6A19\u724C\u5716\u5C64\u63A7\u5236",
     "Move floating controls": "\u79FB\u52D5\u6D6E\u52D5\u63A7\u5236\u9762\u677F",
     "Drag to move. Arrow keys move; Home resets position.": "\u62D6\u66F3\u6216\u4F7F\u7528\u65B9\u5411\u9375\u79FB\u52D5\uFF1BHome \u9375\u91CD\u8A2D\u4F4D\u7F6E\u3002",
@@ -499,7 +605,7 @@
   }
 
   // package.json
-  var version = "0.1.3";
+  var version = "0.1.4";
 
   // src/terms.ts
   var sections = {
@@ -507,14 +613,14 @@
       ["\u5DE5\u5177\u6027\u8CEA\u8207\u7368\u7ACB\u6027", "Taiwan Speed Plate Overlay \u70BA\u793E\u7FA4\u7DAD\u8B77\u7684 WME \u53C3\u8003\u5DE5\u5177\uFF0C\u4E26\u975E Waze \u6216\u4EFB\u4F55\u653F\u5E9C\u6A5F\u95DC\u7684\u5B98\u65B9\u7522\u54C1\uFF0C\u4EA6\u4E0D\u8868\u793A\u7372\u5F97\u5176\u80CC\u66F8\u3002\u672C\u5DE5\u5177\u50C5\u986F\u793A\u758A\u5716\uFF0C\u4E0D\u6703\u4FEE\u6539\u6216\u5132\u5B58 WME \u9053\u8DEF\u8CC7\u6599\u3002"],
       ["\u8CC7\u6599\u4F86\u6E90\u8207\u4F7F\u7528\u6B0A\u9650", "\u8ACB\u50C5\u532F\u5165\u60A8\u6709\u6B0A\u4F7F\u7528\u7684 CSV\uFF0C\u4E26\u81EA\u884C\u78BA\u8A8D\u5404\u8CC7\u6599\u96C6\u7684\u6388\u6B0A\u689D\u4EF6\u3001\u4F86\u6E90\u6A5F\u95DC\u3001\u7248\u672C\u8207\u66F4\u65B0\u65E5\u671F\u3002\u653F\u5E9C\u516C\u958B\u8CC7\u6599\u4E0D\u4EE3\u8868\u53EF\u4E0D\u53D7\u9650\u5236\u5730\u4F7F\u7528\uFF1B\u61C9\u4F9D\u4F86\u6E90\u689D\u4EF6\u4FDD\u7559\u51FA\u8655\u3001\u6388\u6B0A\u8207\u5176\u4ED6\u5FC5\u8981\u6A19\u793A\u3002\u672C\u5DE5\u5177\u4E0D\u6388\u4E88\u8CC7\u6599\u7684\u8457\u4F5C\u6B0A\uFF0C\u4E5F\u4E0D\u4EE3\u8868\u8CC7\u6599\u5DF2\u7372\u51C6\u532F\u5165 Waze\u3002"],
       ["\u7DE8\u8F2F\u8207\u5B89\u5168\u4F7F\u7528", "\u758A\u5716\u50C5\u4F9B\u67E5\u6838\u53C3\u8003\uFF0C\u4E26\u975E\u5C0E\u822A\u6216\u6CD5\u5F8B\u4E0A\u7684\u901F\u9650\u4F9D\u64DA\u3002\u5EA7\u6A19\u3001\u901F\u9650\u3001\u65B9\u5411\u8207\u73FE\u6CC1\u53EF\u80FD\u6709\u932F\u8AA4\u6216\u904E\u6642\uFF1B\u9806\u5411\u8207\u9006\u5411\u4F9D\u539F\u59CB\u8CC7\u6599\u7684\u9053\u8DEF\u53C3\u8003\u65B9\u5411\uFF0C\u4E26\u975E\u7F85\u76E4\u65B9\u4F4D\u3002\u9032\u884C\u4EFB\u4F55\u4EBA\u5DE5\u7DE8\u8F2F\u524D\uFF0C\u8ACB\u7368\u7ACB\u67E5\u8B49\u4E26\u9075\u5B88 Waze \u689D\u6B3E\u3001\u7DE8\u8F2F\u653F\u7B56\u8207\u5728\u5730\u793E\u7FA4\u898F\u7BC4\u3002\u884C\u8ECA\u6642\u8ACB\u4F9D\u73FE\u5834\u6A19\u8A8C\u8207\u9069\u7528\u898F\u5B9A\u3002"],
-      ["\u672C\u6A5F\u6A94\u6848\u8207\u96B1\u79C1", "\u672C\u5DE5\u5177\u5728\u700F\u89BD\u5668\u5167\u8B80\u53D6\u60A8\u9078\u53D6\u7684 CSV\uFF0C\u4E0D\u6703\u5C07\u6A94\u6848\u4E0A\u50B3\u81F3\u672C\u5C08\u6848\u7684\u4F3A\u670D\u5668\u3002\u532F\u5165\u7684\u8CC7\u6599\u50C5\u7559\u5728\u672C\u6B21\u5DE5\u4F5C\u968E\u6BB5\uFF0C\u91CD\u65B0\u8F09\u5165\u5F8C\u9808\u518D\u6B21\u9078\u53D6\uFF1B\u8A9E\u8A00\u3001\u5916\u89C0\u3001\u6B04\u4F4D\u8207\u5716\u5C64\u504F\u597D\u6703\u5132\u5B58\u65BC\u700F\u89BD\u5668\u3002WME \u8207\u5176\u4ED6\u64F4\u5145\u529F\u80FD\u7684\u8CC7\u6599\u8655\u7406\u4ECD\u4F9D\u5404\u81EA\u653F\u7B56\u3002\u8ACB\u52FF\u532F\u5165\u672A\u7D93\u6388\u6B0A\u7684\u500B\u4EBA\u6216\u6A5F\u5BC6\u8CC7\u6599\u3002"],
+      ["\u672C\u6A5F\u6A94\u6848\u8207\u96B1\u79C1", "\u672C\u5DE5\u5177\u5728\u700F\u89BD\u5668\u5167\u8B80\u53D6\u60A8\u9078\u53D6\u7684 CSV\uFF0C\u4E0D\u6703\u5C07\u6A94\u6848\u4E0A\u50B3\u81F3\u672C\u5C08\u6848\u7684\u4F3A\u670D\u5668\u3002\u6210\u529F\u532F\u5165\u7684 CSV \u6703\u81EA\u52D5\u5132\u5B58\u65BC\u6B64\u700F\u89BD\u5668\u7684 IndexedDB\uFF0C\u91CD\u65B0\u8F09\u5165\u5F8C\u81EA\u52D5\u9084\u539F\u3002\u53EF\u4F7F\u7528\u300C\u6E05\u9664\u5DF2\u5132\u5B58 CSV\u300D\u79FB\u9664\u526F\u672C\u8207\u758A\u5716\uFF1B\u6E05\u9664 Waze \u7DB2\u7AD9\u8CC7\u6599\u4E5F\u6703\u79FB\u9664\u526F\u672C\u3002\u8A9E\u8A00\u3001\u5916\u89C0\u3001\u6B04\u4F4D\u8207\u5716\u5C64\u504F\u597D\u6703\u5132\u5B58\u65BC\u700F\u89BD\u5668\u3002WME \u8207\u5176\u4ED6\u64F4\u5145\u529F\u80FD\u7684\u8CC7\u6599\u8655\u7406\u4ECD\u4F9D\u5404\u81EA\u653F\u7B56\u3002\u8ACB\u52FF\u532F\u5165\u672A\u7D93\u6388\u6B0A\u7684\u500B\u4EBA\u6216\u6A5F\u5BC6\u8CC7\u6599\u3002"],
       ["\u63D0\u4F9B\u65B9\u5F0F\u8207\u8CAC\u4EFB", "\u672C\u5DE5\u5177\u4F9D\u73FE\u72C0\u63D0\u4F9B\uFF0C\u4E0D\u4FDD\u8B49\u53EF\u7528\u6027\u3001\u8CC7\u6599\u6B63\u78BA\u6027\u3001\u5B8C\u6574\u6027\u6216\u6301\u7E8C\u7DAD\u8B77\u3002\u60A8\u61C9\u81EA\u884C\u8A55\u4F30\u8CC7\u6599\u8207\u7DE8\u8F2F\u6C7A\u5B9A\u3002\u65BC\u9069\u7528\u6CD5\u5F8B\u5141\u8A31\u7684\u7BC4\u570D\u5167\uFF0C\u7DAD\u8B77\u8005\u4E0D\u5C0D\u56E0\u4F7F\u7528\u672C\u5DE5\u5177\u6240\u751F\u7684\u640D\u5931\u8CA0\u8CAC\uFF1B\u672C\u8AAA\u660E\u4E0D\u6392\u9664\u4F9D\u6CD5\u4E0D\u5F97\u6392\u9664\u7684\u6B0A\u5229\u6216\u8CAC\u4EFB\u3002"]
     ],
     en: [
       ["Purpose and independence", "Taiwan Speed Plate Overlay is a community-maintained reference tool for WME. It is not an official product of, or endorsed by, Waze or any government agency. It displays an overlay only and does not modify or save WME road data."],
       ["Data sources and permissions", "Import only CSV files you are authorized to use. Check each dataset\u2019s license, publishing agency, version, and update date. Public availability does not mean unrestricted use. Retain attribution, license notices, and other markings required by the source. This tool grants no rights to the data and does not establish permission to import it into Waze."],
       ["Editing and safe use", "The overlay is a reference for verification, not navigation or an authoritative statement of legal speed limits. Coordinates, speed values, direction, and status may be inaccurate or outdated. Forward and reverse follow the source road reference, not compass bearings. Independently verify information before any manual edit and follow Waze terms, editing policies, and local community rules. When driving, follow on-site signs and applicable rules."],
-      ["Local files and privacy", "The tool reads your selected CSV in the browser and does not upload it to project servers. Imported records remain in the current session; select the file again after reloading. Language, appearance, column, and layer preferences are stored in your browser. WME and other extensions handle data under their own policies. Do not import unauthorized personal or confidential information."],
+      ["Local files and privacy", "The tool reads your selected CSV in the browser and does not upload it to project servers. Successfully imported CSV files are saved automatically in this browser\u2019s IndexedDB and restored after refresh. Use Clear saved CSV to remove the copy and overlay; clearing Waze site data also removes the copy. Language, appearance, column, and layer preferences are stored in your browser. WME and other extensions handle data under their own policies. Do not import unauthorized personal or confidential information."],
       ["Availability and responsibility", "The tool is provided as is, without guarantees of availability, accuracy, completeness, or continued maintenance. You are responsible for evaluating data and editing decisions. To the extent permitted by applicable law, maintainers are not liable for losses arising from its use. This notice does not exclude rights or responsibilities that cannot legally be excluded."]
     ]
   };
@@ -558,7 +664,7 @@
       }
       const date = document.createElement("p");
       date.className = "spo-terms-meta";
-      date.textContent = language === "en" ? "Updated: 2026-11-14" : "\u66F4\u65B0\u65E5\u671F\uFF1A2026-11-14";
+      date.textContent = language === "en" ? "Updated: 2026-11-15" : "\u66F4\u65B0\u65E5\u671F\uFF1A2026-11-15";
       body.append(date);
     });
     const close = () => {
@@ -612,7 +718,7 @@
     root.innerHTML = `<h4>\u53F0\u7063\u901F\u9650\u6A19\u724C\u758A\u5716</h4>
     <label class="spo-appearance-label">Language <select class="spo-language" aria-label="Language"><option value="zh-TW">\u7E41\u9AD4\u4E2D\u6587</option><option value="en">English</option></select></label>
     <div class="spo-card"><label>Government CSV (UTF-8)<input class="spo-file" type="file" accept=".csv,text/csv"></label>
-    <p class="spo-status" role="status" aria-live="polite"></p></div>
+    <p class="spo-status" role="status" aria-live="polite"></p><button class="spo-clear-file" type="button">Clear saved CSV</button></div>
     <div class="spo-card"><label class="spo-row">Show speed plates <span class="spo-switch"><input class="spo-enabled" type="checkbox"><span></span></span></label>
     <div class="spo-row spo-top-row"><span>Force on top</span>${TOP_LAYER_BUTTON}</div>
     <label class="spo-row spo-floating-setting">Show floating controls <input class="spo-floating-enabled" type="checkbox"></label>
@@ -626,11 +732,16 @@
     <label class="spo-range-label">Speed value size <span class="spo-range"><input class="spo-text-size" type="range" min="0" max="200" step="any"><output class="spo-text-size-value"></output></span></label>
     <p>100% uses the standard plate and larger speed value. Long values are fitted inside the circle.</p></section>
     <section class="spo-card spo-columns-card"><div class="spo-card-header"><h5>Popup columns</h5><button class="spo-reset-order" type="button">Reset order</button></div><p id="spo-order-help">Select fields to display. Drag the right-hand grips to set their order.</p><div class="spo-columns"></div><span class="spo-order-status" role="status" aria-live="polite"></span></section>
-    <p>Files stay in this browser session. Reload and choose the file again. Column and layer preferences are saved.</p><footer class="spo-terms-footer"><button type="button" class="spo-terms-link">Usage terms</button><a class="spo-version" href="https://github.com/waze-community-taiwan/speed-plate-overlay/releases/tag/v${version}" target="_blank" rel="noopener noreferrer">v${version}</a></footer>`;
+    <p>CSV files are saved automatically in this browser and restored after refresh. Clear saved CSV removes the saved copy and overlay.</p><footer class="spo-terms-footer"><button type="button" class="spo-terms-link">Usage terms</button><a class="spo-version" href="https://github.com/waze-community-taiwan/speed-plate-overlay/releases/tag/v${version}" target="_blank" rel="noopener noreferrer">v${version}</a></footer>`;
     const language = root.querySelector(".spo-language");
     language.onchange = () => controller.settings({ language: language.value });
     root.querySelector(".spo-terms-link").onclick = () => openTermsDialog(controller);
     const file = root.querySelector(".spo-file");
+    const clearFile = root.querySelector(".spo-clear-file");
+    clearFile.onclick = () => {
+      file.value = "";
+      void controller.clearFile();
+    };
     const enabled = root.querySelector(".spo-enabled");
     const top = root.querySelector(".spo-top");
     const floating = root.querySelector(".spo-floating-enabled");
@@ -677,6 +788,7 @@
       previousLanguage = state.language;
       language.value = state.language;
       localize(root, state.language);
+      clearFile.disabled = state.loading;
       enabled.checked = state.enabled;
       enabled.disabled = !state.records.length;
       top.setAttribute("aria-pressed", String(state.forceOnTop));
@@ -823,6 +935,9 @@
   .spo-columns-card > p {margin:0 0 10px}
   .spo-reset-order,.spo-reset-size {margin:0;flex-shrink:0;white-space:nowrap;border-radius:6px;border:1px solid var(--hairline,#aaa6);background:transparent;color:inherit;font:inherit;padding:3px 8px;cursor:pointer}
   .spo-reset-order:disabled {opacity:.4;cursor:default}
+  .spo-clear-file {border:0;border-radius:6px;background:transparent;color:inherit;font:inherit;padding:3px 8px;cursor:pointer}
+  .spo-clear-file:hover:not(:disabled) {color:#ff3b30;background:rgba(255,59,48,.12)}
+  .spo-clear-file:disabled {opacity:.4;cursor:default}
   .spo-order-status {display:block;font-size:11px;opacity:.75}
   .spo-range-label,.spo-appearance-label {display:block;margin-top:12px;font-weight:400}
   .spo-range {display:flex;align-items:center;gap:10px;margin-top:8px}
@@ -989,6 +1104,7 @@
       tabLabel.classList.add("spo-tab-label");
       mountSidebar(tabPane, controller);
       mountFloatingPanel(controller, await sdk.Map.getMapViewportElement());
+      void controller.restoreFile();
     } catch (error) {
       page.spoMounted = false;
       console.error(`[${SCRIPT_ID}]`, error);

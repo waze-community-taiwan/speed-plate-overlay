@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Taiwan Speed Plate Overlay
 // @namespace    https://github.com/waze-community-taiwan
-// @version      0.1.4
+// @version      0.1.5
 // @description  Display government speed-limit plates as a read-only WME map layer.
 // @description:zh-TW 在 Waze 地圖編輯器中，以唯讀疊圖顯示 CSV 速限標牌。
 // @author       Waze Community Taiwan
@@ -125,6 +125,7 @@
     floatingControls: true,
     floatingOpacity: 1,
     badgePosition: "bottom-right",
+    arrowStyle: "four-direction",
     clockwiseColor: "#34c759",
     counterclockwiseColor: "#ff9500",
     plateScale: 1,
@@ -144,6 +145,7 @@
       floatingControls: typeof value?.floatingControls === "boolean" ? value.floatingControls : true,
       floatingOpacity: clamp(value?.floatingOpacity, 0.1, 1, 1),
       badgePosition: ["top-left", "top-right", "bottom-left", "bottom-right"].includes(value?.badgePosition ?? "") ? value.badgePosition : "bottom-right",
+      arrowStyle: value?.arrowStyle === "circular" ? "circular" : "four-direction",
       clockwiseColor: normalizeBadgeColor(value?.clockwiseColor, DEFAULT_SETTINGS.clockwiseColor),
       counterclockwiseColor: normalizeBadgeColor(value?.counterclockwiseColor, DEFAULT_SETTINGS.counterclockwiseColor),
       plateScale: clamp(value?.plateScale, 0.25, 4, 1),
@@ -339,8 +341,12 @@
     "Force speed plates above other map layers": "\u5C07\u901F\u9650\u6A19\u724C\u7F6E\u65BC\u5176\u4ED6\u5716\u5C64\u4E0A\u65B9",
     "Show floating controls": "\u986F\u793A\u6D6E\u52D5\u63A7\u5236\u9762\u677F",
     "Floating opacity": "\u6D6E\u52D5\u9762\u677F\u4E0D\u900F\u660E\u5EA6",
-    "\u21BB \u9806\u5411 \xB7 \u21BA \u9006\u5411 \xB7 ? unknown": "\u21BB \u9806\u5411 \xB7 \u21BA \u9006\u5411 \xB7 ? \u672A\u77E5",
-    "Direction follows the source road reference, not a compass bearing.": "\u65B9\u5411\u4F9D\u539F\u59CB\u8CC7\u6599\u7684\u9053\u8DEF\u53C3\u8003\u65B9\u5411\uFF0C\u4E26\u975E\u7F85\u76E4\u65B9\u4F4D\u3002",
+    "Even roads: \u2192 forward \xB7 \u2190 reverse; odd roads: \u2193 forward \xB7 \u2191 reverse; ? unknown": "\u5076\u6578\u516C\u8DEF\uFF1A\u2192 \u9806\u5411 \xB7 \u2190 \u9006\u5411\uFF1B\u5947\u6578\u516C\u8DEF\uFF1A\u2193 \u9806\u5411 \xB7 \u2191 \u9006\u5411\uFF1B? \u672A\u77E5",
+    "Four-direction arrows show the traffic direction the speed limit applies to: \u2191 northbound, \u2192 eastbound, \u2193 southbound, \u2190 westbound. For example, \u2191 means this plate applies to northbound traffic.": "\u56DB\u65B9\u5411\u7BAD\u982D\u8868\u793A\u6B64\u6A19\u724C\u901F\u9650\u9069\u7528\u7684\u8ECA\u6D41\u884C\u9032\u65B9\u5411\uFF1A\u2191 \u5317\u5411\u3001\u2192 \u6771\u5411\u3001\u2193 \u5357\u5411\u3001\u2190 \u897F\u5411\u3002\u4F8B\u5982\uFF0C\u2191 \u8868\u793A\u6B64\u6A19\u724C\u7684\u901F\u9650\u9069\u7528\u65BC\u5317\u5411\u8ECA\u6D41\u3002",
+    "Circular arrows show the plate\u2019s facing direction: \u21BB clockwise (\u9806\u5411), \u21BA counter-clockwise (\u9006\u5411). The speed limit applies to traffic approaching the front of the plate, traveling opposite to the direction it faces. For example, a clockwise-facing plate may face south, so its speed limit applies to northbound traffic.": "\u5713\u5F62\u7BAD\u982D\u8868\u793A\u6A19\u724C\u7684\u9762\u5411\u65B9\u5411\uFF1A\u21BB \u9806\u6642\u91DD\uFF08\u9806\u5411\uFF09\u3001\u21BA \u9006\u6642\u91DD\uFF08\u9006\u5411\uFF09\u3002\u901F\u9650\u9069\u7528\u65BC\u8FCE\u5411\u6A19\u724C\u6B63\u9762\u7684\u8ECA\u6D41\uFF0C\u8ECA\u6D41\u884C\u9032\u65B9\u5411\u8207\u6A19\u724C\u9762\u5411\u76F8\u53CD\u3002\u4F8B\u5982\uFF0C\u9806\u6642\u91DD\u9762\u5411\u7684\u6A19\u724C\u53EF\u80FD\u671D\u5357\uFF0C\u56E0\u6B64\u5176\u901F\u9650\u9069\u7528\u65BC\u5317\u5411\u8ECA\u6D41\u3002",
+    "Arrow style": "\u7BAD\u982D\u6A23\u5F0F",
+    "Four directions (default)": "\u56DB\u65B9\u5411\uFF08\u9810\u8A2D\uFF09",
+    "Clockwise / counter-clockwise": "\u9806\u6642\u91DD\uFF0F\u9006\u6642\u91DD",
     "Plate appearance": "\u6A19\u724C\u5916\u89C0",
     "Badge position": "\u65B9\u5411\u5FBD\u7AE0\u4F4D\u7F6E",
     "Top left": "\u5DE6\u4E0A",
@@ -421,21 +427,32 @@
   // src/marker.ts
   var graphics = /* @__PURE__ */ new Map();
   var escapeXml = (value) => value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[char]);
+  function directionSymbol(direction, roadNumber = "", arrowStyle = "four-direction") {
+    if (arrowStyle === "circular") return direction === "\u9806\u5411" ? "\u21BB" : direction === "\u9006\u5411" ? "\u21BA" : "?";
+    const number = /^(?:台|臺)?\s*(\d+)/.exec(roadNumber.normalize("NFKC").trim())?.[1];
+    if (!number || /^0+$/.test(number) || !["\u9806\u5411", "\u9006\u5411"].includes(direction)) return "?";
+    const even = Number(number.at(-1)) % 2 === 0;
+    return even ? direction === "\u9806\u5411" ? "\u2192" : "\u2190" : direction === "\u9806\u5411" ? "\u2193" : "\u2191";
+  }
   function badgeOffset(position) {
     return { x: position.endsWith("right") ? 16 : -16, y: position.startsWith("bottom") ? 16 : -16 };
   }
-  function plateGraphic(speed, direction, settings = DEFAULT_SETTINGS) {
+  function plateGraphic(speed, direction, settings = DEFAULT_SETTINGS, roadNumber = "") {
     const clockwise = normalizeBadgeColor(settings.clockwiseColor, DEFAULT_SETTINGS.clockwiseColor);
     const counterclockwise = normalizeBadgeColor(settings.counterclockwiseColor, DEFAULT_SETTINGS.counterclockwiseColor);
-    const key = JSON.stringify([speed, direction, settings.badgePosition, settings.speedTextScale, clockwise, counterclockwise]);
+    const symbol = directionSymbol(direction, roadNumber, settings.arrowStyle);
+    const key = JSON.stringify([speed, direction, symbol, settings.badgePosition, settings.speedTextScale, clockwise, counterclockwise]);
     const cached = graphics.get(key);
     if (cached) return cached;
-    const known = direction === "\u9806\u5411" || direction === "\u9006\u5411";
+    const known = symbol !== "?";
     const background = direction === "\u9806\u5411" ? clockwise : direction === "\u9006\u5411" ? counterclockwise : "#626772";
     const channels = [1, 3, 5].map((index) => parseInt(background.slice(index, index + 2), 16) / 255).map((c) => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
     const luminance = channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
-    const ink = luminance > 0.2 ? "#161616" : "#ffffff";
-    const arrow = `<g transform="${direction === "\u9006\u5411" ? "translate(20 0) scale(-1 1)" : ""}" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 14 A7 7 0 1 1 17 7 M17 2 V7 H12"/></g>`;
+    const ink = (luminance + 0.05) / 0.05 >= 1.05 / (luminance + 0.05) ? "#000000" : "#ffffff";
+    const rotation = { "\u2192": 0, "\u2193": 90, "\u2190": 180, "\u2191": 270 }[symbol];
+    const straightArrow = `<g transform="rotate(${rotation} 10 10)" fill="none" stroke="${ink}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 H17 M11 4 L17 10 L11 16"/></g>`;
+    const circularArrow = `<g transform="${direction === "\u9006\u5411" ? "translate(20 0) scale(-1 1)" : ""}" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 14 A7 7 0 1 1 17 7 M17 2 V7 H12"/></g>`;
+    const arrow = settings.arrowStyle === "circular" ? circularArrow : straightArrow;
     const offset = badgeOffset(settings.badgePosition), x = 28 + offset.x, y = 28 + offset.y;
     const fontSize = (speed.length > 3 ? 15 : 21) * settings.speedTextScale;
     const fit = speed.length * fontSize * 0.6 > 30 ? 'textLength="30" lengthAdjust="spacingAndGlyphs"' : "";
@@ -443,7 +460,7 @@
     <circle cx="28" cy="28" r="18" fill="white" stroke="#df3030" stroke-width="3"/>
     <text x="28" y="28" dy=".35em" text-anchor="middle" font-family="Arial,sans-serif" font-size="${fontSize}" ${fit} font-weight="700" fill="#161616">${escapeXml(speed)}</text>
     <circle cx="${x}" cy="${y}" r="10" fill="${background}" stroke="white" stroke-width="1.5"/>
-    <g transform="translate(${x - 8} ${y - 8}) scale(.8)">${known ? arrow : '<text x="10" y="15" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="white">?</text>'}</g>
+    <g transform="translate(${x - 8} ${y - 8}) scale(.8)">${known ? arrow : `<text x="10" y="15" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="${ink}">?</text>`}</g>
   </svg>`;
     const graphic = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     if (graphics.size >= 512) graphics.clear();
@@ -452,12 +469,9 @@
   }
 
   // src/adapter.ts
-  function directionSymbol(direction) {
-    return direction === "\u9806\u5411" ? "\u21BB" : direction === "\u9006\u5411" ? "\u21BA" : "?";
-  }
   async function bindMap(sdk, controller) {
     await sdk.Map.addLayer({ layerName: LAYER_NAME, styleContext: {
-      plateGraphic: ({ feature }) => plateGraphic(String(feature?.properties.label ?? ""), String(feature?.properties.direction ?? ""), controller.state),
+      plateGraphic: ({ feature }) => plateGraphic(String(feature?.properties.label ?? ""), String(feature?.properties.direction ?? ""), controller.state, String(feature?.properties.roadNumber ?? "")),
       markerSize: () => 56 * controller.state.plateScale
     }, styleRules: [{ style: {
       externalGraphic: "${plateGraphic}",
@@ -497,7 +511,7 @@
       button.setAttribute("aria-label", t(controller.state.language, "Close details"));
       button.onclick = close;
       const title = document.createElement("strong");
-      title.textContent = `${record.speed} km/h \xB7 ${directionSymbol(record.direction)} ${record.direction}`;
+      title.textContent = `${record.speed} km/h \xB7 ${directionSymbol(record.direction, record.values["\u516C\u8DEF\u7DE8\u865F"], controller.state.arrowStyle)} ${record.direction}`;
       const list = document.createElement("dl");
       for (const column of orderedColumns(controller.state).filter((c) => controller.state.visibleColumns.includes(c))) {
         const term = document.createElement("dt");
@@ -528,11 +542,11 @@
             type: "Feature",
             id: record.id,
             geometry: { type: "Point", coordinates: [record.longitude, record.latitude] },
-            properties: { label: record.speed, direction: record.direction }
+            properties: { label: record.speed, direction: record.direction, roadNumber: record.values["\u516C\u8DEF\u7DE8\u865F"] ?? "" }
           })) });
           records = state.records;
         }
-        const nextStyle = JSON.stringify([state.badgePosition, state.plateScale, state.speedTextScale, state.clockwiseColor, state.counterclockwiseColor]);
+        const nextStyle = JSON.stringify([state.arrowStyle, state.badgePosition, state.plateScale, state.speedTextScale, state.clockwiseColor, state.counterclockwiseColor]);
         if (markerStyle !== nextStyle) {
           await sdk.Map.redrawLayer({ layerName: LAYER_NAME });
           markerStyle = nextStyle;
@@ -605,7 +619,7 @@
   }
 
   // package.json
-  var version = "0.1.4";
+  var version = "0.1.5";
 
   // src/terms.ts
   var sections = {
@@ -723,8 +737,10 @@
     <div class="spo-row spo-top-row"><span>Force on top</span>${TOP_LAYER_BUTTON}</div>
     <label class="spo-row spo-floating-setting">Show floating controls <input class="spo-floating-enabled" type="checkbox"></label>
     <label class="spo-range-label">Floating opacity <span class="spo-range"><input class="spo-opacity" type="range" min="10" max="100" step="5"><output class="spo-opacity-value"></output></span></label>
-    <p>\u21BB \u9806\u5411 \xB7 \u21BA \u9006\u5411 \xB7 ? unknown<br>Direction follows the source road reference, not a compass bearing.</p></div>
+    </div>
     <section class="spo-card spo-appearance-card"><div class="spo-card-header"><h5>Plate appearance</h5><button class="spo-reset-size" type="button">Reset sizes</button></div>
+    <label class="spo-appearance-label">Arrow style <select class="spo-arrow-style" aria-label="Arrow style" aria-describedby="spo-arrow-help"><option value="four-direction">Four directions (default)</option><option value="circular">Clockwise / counter-clockwise</option></select></label>
+    <div id="spo-arrow-help"><div class="spo-four-direction-help"><p>Four-direction arrows show the traffic direction the speed limit applies to: \u2191 northbound, \u2192 eastbound, \u2193 southbound, \u2190 westbound. For example, \u2191 means this plate applies to northbound traffic.</p><p>Even roads: \u2192 forward \xB7 \u2190 reverse; odd roads: \u2193 forward \xB7 \u2191 reverse; ? unknown</p></div><p class="spo-circular-help">Circular arrows show the plate\u2019s facing direction: \u21BB clockwise (\u9806\u5411), \u21BA counter-clockwise (\u9006\u5411). The speed limit applies to traffic approaching the front of the plate, traveling opposite to the direction it faces. For example, a clockwise-facing plate may face south, so its speed limit applies to northbound traffic.</p></div>
     <label class="spo-appearance-label">Badge position <select class="spo-badge-position"><option value="top-left">Top left</option><option value="top-right">Top right</option><option value="bottom-left">Bottom left</option><option value="bottom-right">Bottom right</option></select></label>
     <label class="spo-row spo-color-row">Clockwise badge color <input class="spo-clockwise-color" type="color"></label>
     <label class="spo-row spo-color-row">Counter-clockwise badge color <input class="spo-counterclockwise-color" type="color"></label>
@@ -748,6 +764,8 @@
     const opacity = root.querySelector(".spo-opacity");
     const plateSize = root.querySelector(".spo-plate-size");
     const textSize = root.querySelector(".spo-text-size");
+    const arrowStyle = root.querySelector(".spo-arrow-style");
+    arrowStyle.onchange = () => controller.settings({ arrowStyle: arrowStyle.value });
     const badgePosition = root.querySelector(".spo-badge-position");
     const clockwiseColor = root.querySelector(".spo-clockwise-color");
     const counterclockwiseColor = root.querySelector(".spo-counterclockwise-color");
@@ -794,6 +812,9 @@
       top.setAttribute("aria-pressed", String(state.forceOnTop));
       floating.checked = state.floatingControls;
       root.querySelector(".spo-reset-order").disabled = !state.headers.length;
+      arrowStyle.value = state.arrowStyle;
+      root.querySelector(".spo-four-direction-help").hidden = state.arrowStyle !== "four-direction";
+      root.querySelector(".spo-circular-help").hidden = state.arrowStyle !== "circular";
       badgePosition.value = state.badgePosition;
       clockwiseColor.value = state.clockwiseColor;
       counterclockwiseColor.value = state.counterclockwiseColor;

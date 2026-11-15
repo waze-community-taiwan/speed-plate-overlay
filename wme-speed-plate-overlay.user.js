@@ -3,7 +3,7 @@
 // @namespace    https://github.com/waze-community-taiwan
 // @version      0.1.3
 // @description  Display government speed-limit plates as a read-only WME map layer.
-// @description:zh-TW 在 Waze 地圖編輯器中，以唯讀疊圖顯示政府 CSV 速限標牌。
+// @description:zh-TW 在 Waze 地圖編輯器中，以唯讀疊圖顯示 CSV 速限標牌。
 // @author       Waze Community Taiwan
 // @license      MIT
 // @homepageURL  https://github.com/waze-community-taiwan/speed-plate-overlay

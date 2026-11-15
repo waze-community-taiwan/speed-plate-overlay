@@ -10,7 +10,7 @@ export function mountSidebar(root: HTMLElement, controller: Controller) {
   root.innerHTML = `<h4>台灣速限標牌疊圖</h4>
     <label class="spo-appearance-label">Language <select class="spo-language" aria-label="Language"><option value="zh-TW">繁體中文</option><option value="en">English</option></select></label>
     <div class="spo-card"><label>Government CSV (UTF-8)<input class="spo-file" type="file" accept=".csv,text/csv"></label>
-    <p class="spo-status" role="status" aria-live="polite"></p></div>
+    <p class="spo-status" role="status" aria-live="polite"></p><button class="spo-clear-file" type="button">Clear saved CSV</button></div>
     <div class="spo-card"><label class="spo-row">Show speed plates <span class="spo-switch"><input class="spo-enabled" type="checkbox"><span></span></span></label>
     <div class="spo-row spo-top-row"><span>Force on top</span>${TOP_LAYER_BUTTON}</div>
     <label class="spo-row spo-floating-setting">Show floating controls <input class="spo-floating-enabled" type="checkbox"></label>
@@ -24,11 +24,13 @@ export function mountSidebar(root: HTMLElement, controller: Controller) {
     <label class="spo-range-label">Speed value size <span class="spo-range"><input class="spo-text-size" type="range" min="0" max="200" step="any"><output class="spo-text-size-value"></output></span></label>
     <p>100% uses the standard plate and larger speed value. Long values are fitted inside the circle.</p></section>
     <section class="spo-card spo-columns-card"><div class="spo-card-header"><h5>Popup columns</h5><button class="spo-reset-order" type="button">Reset order</button></div><p id="spo-order-help">Select fields to display. Drag the right-hand grips to set their order.</p><div class="spo-columns"></div><span class="spo-order-status" role="status" aria-live="polite"></span></section>
-    <p>Files stay in this browser session. Reload and choose the file again. Column and layer preferences are saved.</p><footer class="spo-terms-footer"><button type="button" class="spo-terms-link">Usage terms</button><a class="spo-version" href="https://github.com/waze-community-taiwan/speed-plate-overlay/releases/tag/v${scriptVersion}" target="_blank" rel="noopener noreferrer">v${scriptVersion}</a></footer>`;
+    <p>CSV files are saved automatically in this browser and restored after refresh. Clear saved CSV removes the saved copy and overlay.</p><footer class="spo-terms-footer"><button type="button" class="spo-terms-link">Usage terms</button><a class="spo-version" href="https://github.com/waze-community-taiwan/speed-plate-overlay/releases/tag/v${scriptVersion}" target="_blank" rel="noopener noreferrer">v${scriptVersion}</a></footer>`;
   const language = root.querySelector<HTMLSelectElement>('.spo-language')!;
   language.onchange = () => controller.settings({language: language.value as Language});
   root.querySelector<HTMLButtonElement>('.spo-terms-link')!.onclick = () => openTermsDialog(controller);
   const file = root.querySelector<HTMLInputElement>('.spo-file')!;
+  const clearFile = root.querySelector<HTMLButtonElement>('.spo-clear-file')!;
+  clearFile.onclick = () => { file.value = ''; void controller.clearFile(); };
   const enabled = root.querySelector<HTMLInputElement>('.spo-enabled')!;
   const top = root.querySelector<HTMLButtonElement>('.spo-top')!;
   const floating = root.querySelector<HTMLInputElement>('.spo-floating-enabled')!;
@@ -70,6 +72,7 @@ export function mountSidebar(root: HTMLElement, controller: Controller) {
     if (previousLanguage !== state.language) root.querySelector('.spo-order-status')!.textContent = '';
     previousLanguage = state.language;
     language.value = state.language; localize(root, state.language);
+    clearFile.disabled = state.loading;
     enabled.checked = state.enabled; enabled.disabled = !state.records.length;
     top.setAttribute('aria-pressed', String(state.forceOnTop));
     floating.checked = state.floatingControls;

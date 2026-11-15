@@ -4,6 +4,32 @@ test.beforeEach(async ({page}) => {
   await page.locator('.spo-language').selectOption('en');
 });
 const csv = 'longitude,latitude,speed,direction,note\n121.5,25,50,順向,<script>alert(1)</script>\n121.51,25.01,30,逆向,hello';
+test('automatically remembers a CSV, preserves it on invalid replacement and clears it across refresh', async ({page}) => {
+  const input = page.getByLabel('Government CSV');
+  await input.setInputFiles({name:'remembered.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});
+  await expect(page.locator('.spo-status')).toContainText('remembered.csv: 2 plates');
+  await page.reload();
+  await expect(page.locator('.plate')).toHaveCount(2);
+  await expect(page.locator('.spo-status')).toContainText('remembered.csv: 2 plates');
+  await input.setInputFiles({name:'bad.csv',mimeType:'text/csv',buffer:Buffer.from('broken')});
+  await expect(page.locator('.spo-status')).toContainText('Missing required');
+  await page.reload(); await expect(page.locator('.plate')).toHaveCount(2);
+  await page.getByRole('button',{name:'Clear saved CSV',exact:true}).click();
+  await expect(page.locator('.spo-status')).toHaveText('Choose a government CSV to begin.');
+  await expect(page.locator('.plate')).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('.spo-status')).toHaveText('Choose a government CSV to begin.');
+  await expect(page.getByLabel('Show speed plates')).toBeDisabled();
+});
+
+test('storage failure reports a warning while the imported overlay remains usable', async ({page}) => {
+  await page.addInitScript(() => { Object.defineProperty(window,'indexedDB',{get() { throw new Error('Storage unavailable'); }}); });
+  await page.reload();
+  await expect(page.locator('.spo-status')).toContainText('could not be restored');
+  await page.getByLabel('Government CSV').setInputFiles({name:'local.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});
+  await expect(page.locator('.spo-status')).toContainText('could not be saved');
+  await expect(page.locator('.plate')).toHaveCount(2);
+});
 test('built userscript imports local CSV, toggles layer, selects popup columns and restores settings', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/mock-wme-sdk.html');
@@ -232,7 +258,7 @@ test('Traditional Chinese defaults, language switching preserves imported data, 
   await page.evaluate(() => localStorage.clear()); await page.reload();
   await expect(page.locator('.spo-language')).toHaveValue('zh-TW');
   await expect(page.getByRole('heading',{name:'台灣速限標牌疊圖'})).toBeVisible();
-  await page.getByLabel('政府資料 CSV').setInputFiles({name:'sample.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});
+  await page.getByLabel('資料 CSV').setInputFiles({name:'sample.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});
   await page.getByText('資訊泡泡欄位',{exact:true}).click();
   await page.getByLabel('note',{exact:true}).check();
   await page.locator('.spo-floating .spo-top').click();

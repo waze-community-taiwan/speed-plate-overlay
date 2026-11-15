@@ -24,6 +24,7 @@ async function main() {
     const { tabLabel, tabPane } = await sdk.Sidebar.registerScriptTab();
     tabLabel.textContent = '台灣速限標牌疊圖'; tabLabel.classList.add('spo-tab-label'); mountSidebar(tabPane, controller);
     mountFloatingPanel(controller, await sdk.Map.getMapViewportElement());
+    void controller.restoreFile();
   } catch (error) { (page as PageWindow).spoMounted = false; console.error(`[${SCRIPT_ID}]`, error); }
 }
 void main();

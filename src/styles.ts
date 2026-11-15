@@ -39,6 +39,9 @@ export function injectStyles() {
   .spo-columns-card > p {margin:0 0 10px}
   .spo-reset-order,.spo-reset-size {margin:0;flex-shrink:0;white-space:nowrap;border-radius:6px;border:1px solid var(--hairline,#aaa6);background:transparent;color:inherit;font:inherit;padding:3px 8px;cursor:pointer}
   .spo-reset-order:disabled {opacity:.4;cursor:default}
+  .spo-clear-file {border:0;border-radius:6px;background:transparent;color:inherit;font:inherit;padding:3px 8px;cursor:pointer}
+  .spo-clear-file:hover:not(:disabled) {color:#ff3b30;background:rgba(255,59,48,.12)}
+  .spo-clear-file:disabled {opacity:.4;cursor:default}
   .spo-order-status {display:block;font-size:11px;opacity:.75}
   .spo-range-label,.spo-appearance-label {display:block;margin-top:12px;font-weight:400}
   .spo-range {display:flex;align-items:center;gap:10px;margin-top:8px}

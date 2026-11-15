@@ -4,5 +4,6 @@ test-results/
 playwright-report/
 .wme-test-profile/
 .wme-test-profile-normal/
+.wme-manual-profile-*/
 dist/
 .agents/

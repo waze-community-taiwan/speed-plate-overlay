@@ -1,7 +1,7 @@
 export type Language = 'zh-TW' | 'en';
 
 const zh: Record<string, string> = {
-  'Language': '語言', 'Government CSV (UTF-8)': '政府資料 CSV（UTF-8）',
+  'Language': '語言', 'Government CSV (UTF-8)': '資料 CSV（UTF-8）',
   'Show speed plates': '顯示速限標牌', 'Force on top': '強制置頂',
   'Force speed plates above other map layers': '將速限標牌置於其他圖層上方',
   'Show floating controls': '顯示浮動控制面板', 'Floating opacity': '浮動面板不透明度',
@@ -15,8 +15,12 @@ const zh: Record<string, string> = {
   'Popup columns': '資訊泡泡欄位',
   'Select fields to display. Drag the right-hand grips to set their order.': '勾選要顯示的欄位，拖曳右側握柄調整顯示順序。',
   'Reset order': '重設順序', 'Order reset to the CSV column order.': '已重設為 CSV 原始欄位順序。',
-  'Files stay in this browser session. Reload and choose the file again. Column and layer preferences are saved.': '檔案僅保留於本次瀏覽器工作階段，重新載入後須再次選取。欄位與圖層偏好設定會自動儲存。',
-  'Reading CSV…': '正在讀取 CSV…', 'Choose a government CSV to begin.': '請選取政府 CSV 資料開始使用。',
+  'CSV files are saved automatically in this browser and restored after refresh. Clear saved CSV removes the saved copy and overlay.': 'CSV 會自動儲存於此瀏覽器，重新載入後會自動還原。「清除已儲存 CSV」會移除儲存的副本與疊圖。',
+  'Clear saved CSV': '清除已儲存 CSV',
+  'Saved CSV could not be restored. Choose the file again.': '無法還原已儲存的 CSV，請重新選取檔案。',
+  'Saved CSV could not be cleared. Try again.': '無法清除已儲存的 CSV，請重試。',
+  'CSV loaded, but could not be saved in this browser. Select it again after refresh.': 'CSV 已載入，但無法儲存於此瀏覽器，重新載入後請再次選取。',
+  'Reading CSV…': '正在讀取 CSV…', 'Choose a government CSV to begin.': '請選取 CSV 資料開始使用。',
   'Speed plate layer controls': '速限標牌圖層控制', 'Move floating controls': '移動浮動控制面板',
   'Drag to move. Arrow keys move; Home resets position.': '拖曳或使用方向鍵移動；Home 鍵重設位置。',
   'Speed Plates': '速限標牌', 'Hide floating controls': '隱藏浮動控制面板', 'On top': '置頂',
